@@ -1,0 +1,93 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Diagnostics;
+
+namespace MyprocessSample
+{
+    class MyProcess
+    {
+        static void Main(string[] args)
+        {
+            PerformanceCounter cpuCounter;
+            PerformanceCounter ramCounter;
+            Process[] processes = Process.GetProcesses();
+
+            cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+
+            var counters = new List<PerformanceCounter>();
+            int i = 0;
+
+            double getCurrentCpuUsage()
+            {
+                return cpuCounter.NextValue();
+            }
+
+            string getAvalableRam()
+            {
+                return ramCounter.NextValue() + " MB";
+            }
+
+            Console.Write("Выберите мод:\n 1 - показатели ЦП и ОЗУ;\n 2 - Вся информация о процессах\n");
+            int n = Convert.ToInt16(Console.ReadLine());
+
+            switch (n)
+            {
+                case 1:
+                    while (Console.KeyAvailable == false)
+                    {
+                        Console.WriteLine("нажмите любую клавишу для выхода");
+                        Console.WriteLine("Загрузка ЦП ", Convert.ToInt16(getCurrentCpuUsage()) + " %");
+                        Console.WriteLine("Свободной памяти : " + getAvalableRam());
+                        Thread.Sleep(1000);
+                        Console.Clear();
+                    }
+                    break;
+
+                case 2:
+
+                    Console.WriteLine($"{"ИД",5}{"Имя",25}{"ОЗУ",11}{"ЦП",15}\n");
+
+                    foreach (Process process in Process.GetProcesses())
+                    {
+                        var counter = new PerformanceCounter("Process", "% Processor Time", process.ProcessName);
+                        counter.NextValue();
+                        counters.Add(counter);
+                    }
+
+                    Thread.Sleep(1000);
+                    try
+                    {
+                        foreach (var counter in counters)
+                        {
+                            if (processes[i].Id == 0)
+                                Console.WriteLine("");
+                            else
+                            {
+                                Console.WriteLine("{0,6}{1,50}{2,10}{3,12:0}", processes[i].Id, processes[i].ProcessName,
+                                    processes[i].WorkingSet64 / 1024, Convert.ToInt16(counter.NextValue()) + " %");
+                                i++;
+                            }
+                        }
+                    }
+
+                    catch (System.IndexOutOfRangeException)
+                    {
+                        Console.WriteLine(" ");
+                    }
+                    break;
+                default:
+
+                    Console.WriteLine(".");
+                    break;
+            }
+
+            Console.ReadKey();
+        }
+    }
+}
+
+
